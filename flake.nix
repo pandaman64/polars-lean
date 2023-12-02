@@ -7,6 +7,9 @@
     in
     {
       devShells.x86_64-linux.default = pkgs.mkShell {
+        nativeBuildInputs = [
+          pkgs.rustPlatform.bindgenHook
+        ];
         packages = [
           pkgs.nixpkgs-fmt
           pkgs.nil
