@@ -10,6 +10,7 @@ name = "polars_lean"
 crate-type = ["staticlib"]
 
 [dependencies]
+polars = "0.35.4"
 
 [build-dependencies]
 bindgen = "0.69.1"

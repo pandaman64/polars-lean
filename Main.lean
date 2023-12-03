@@ -1,7 +1,19 @@
 import «PolarsLean»
 
-@[extern "polars_lean_add"]
-private opaque add : UInt32 → UInt32 → UInt32
+opaque SeriesPointed : NonemptyType
+def Series : Type := SeriesPointed.type
+instance : Nonempty Series := SeriesPointed.property
 
-def main : IO Unit :=
-  IO.println s!"Hello, {add 100 200}!"
+@[extern "give_me_a_series"]
+private opaque giveMeASeries: Unit → Series
+
+@[extern "polars_lean_print_series"]
+private opaque Series.print : @& Series → String
+
+def main : IO Unit := do
+  IO.println s!"Hello Rust!"
+  let s := giveMeASeries ()
+  IO.println (Series.print s)
+  IO.println (Series.print s)
+  IO.println (Series.print s)
+  IO.println (Series.print s)
