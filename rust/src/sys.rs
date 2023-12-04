@@ -138,37 +138,61 @@ pub(crate) unsafe fn lean_ctor_set(o: b_lean_obj_arg, i: u32, v: lean_obj_arg) {
 #[inline]
 pub(crate) unsafe fn lean_ctor_get_uint32(o: b_lean_obj_arg, offset: u32) -> u32 {
     debug_assert!(offset >= lean_ctor_num_objs(o) * size_of::<*mut lean_object>() as u32);
-    lean_ctor_obj_cptr(o).cast::<u8>().add(offset as usize).cast::<u32>().read()
+    lean_ctor_obj_cptr(o)
+        .cast::<u8>()
+        .add(offset as usize)
+        .cast::<u32>()
+        .read()
 }
 
 #[inline]
 pub(crate) unsafe fn lean_ctor_get_uint64(o: b_lean_obj_arg, offset: u32) -> u64 {
     debug_assert!(offset >= lean_ctor_num_objs(o) * size_of::<*mut lean_object>() as u32);
-    lean_ctor_obj_cptr(o).cast::<u8>().add(offset as usize).cast::<u64>().read()
+    lean_ctor_obj_cptr(o)
+        .cast::<u8>()
+        .add(offset as usize)
+        .cast::<u64>()
+        .read()
 }
 
 #[inline]
 pub(crate) unsafe fn lean_ctor_get_float(o: b_lean_obj_arg, offset: u32) -> f64 {
     debug_assert!(offset >= lean_ctor_num_objs(o) * size_of::<*mut lean_object>() as u32);
-    lean_ctor_obj_cptr(o).cast::<u8>().add(offset as usize).cast::<f64>().read()
+    lean_ctor_obj_cptr(o)
+        .cast::<u8>()
+        .add(offset as usize)
+        .cast::<f64>()
+        .read()
 }
 
 #[inline]
 pub(crate) unsafe fn lean_ctor_set_uint32(o: b_lean_obj_arg, offset: u32, v: u32) {
     debug_assert!(offset >= lean_ctor_num_objs(o) * size_of::<*mut lean_object>() as u32);
-    lean_ctor_obj_cptr(o).cast::<u8>().add(offset as usize).cast::<u32>().write(v);
+    lean_ctor_obj_cptr(o)
+        .cast::<u8>()
+        .add(offset as usize)
+        .cast::<u32>()
+        .write(v);
 }
 
 #[inline]
 pub(crate) unsafe fn lean_ctor_set_uint64(o: b_lean_obj_arg, offset: u32, v: u64) {
     debug_assert!(offset >= lean_ctor_num_objs(o) * size_of::<*mut lean_object>() as u32);
-    lean_ctor_obj_cptr(o).cast::<u8>().add(offset as usize).cast::<u64>().write(v);
+    lean_ctor_obj_cptr(o)
+        .cast::<u8>()
+        .add(offset as usize)
+        .cast::<u64>()
+        .write(v);
 }
 
 #[inline]
 pub(crate) unsafe fn lean_ctor_set_float(o: b_lean_obj_arg, offset: u32, v: f64) {
     debug_assert!(offset >= lean_ctor_num_objs(o) * size_of::<*mut lean_object>() as u32);
-    lean_ctor_obj_cptr(o).cast::<u8>().add(offset as usize).cast::<f64>().write(v);
+    lean_ctor_obj_cptr(o)
+        .cast::<u8>()
+        .add(offset as usize)
+        .cast::<f64>()
+        .write(v);
 }
 
 #[inline]
@@ -247,7 +271,17 @@ pub(crate) unsafe fn lean_scalar_to_int64(o: b_lean_obj_arg) -> i64 {
     }
 }
 
-// Utility function not in lean.h
+// Utility function for strings
 pub(crate) unsafe fn convert_string(s: &str) -> lean_obj_res {
     lean_mk_string_from_bytes(s.as_ptr().cast(), s.len())
+}
+
+pub(crate) unsafe fn lean_string_to_str(o: b_lean_obj_arg) -> &'static str {
+    debug_assert!((*o).m_tag() == LeanString);
+    let s: *const lean_string_object = o.cast();
+    std::str::from_utf8_unchecked(std::slice::from_raw_parts(
+        (*s).m_data.as_ptr().cast(),
+        // exclude null terminator
+        (*s).m_size - 1,
+    ))
 }

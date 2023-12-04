@@ -6,8 +6,9 @@ use crate::{
     data_type::DataType,
     sys::{
         b_lean_obj_arg, convert_string, lean_alloc_external, lean_array_object,
-        lean_external_class, lean_get_external_data, lean_obj_res, lean_register_external_class,
-        lean_unbox, LeanArray, SyncPtr, lean_unbox_uint64, lean_is_scalar, lean_scalar_to_int64, lean_unbox_float,
+        lean_external_class, lean_get_external_data, lean_is_scalar, lean_obj_res,
+        lean_register_external_class, lean_scalar_to_int64, lean_string_to_str, lean_unbox,
+        lean_unbox_float, lean_unbox_uint64, LeanArray, LeanString, SyncPtr,
     },
 };
 
@@ -30,19 +31,23 @@ fn series_external_class() -> *mut lean_external_class {
 }
 
 /// # Safety
-/// The lean function must pass `Array dt.asType` as the second argument.
+/// The lean function must pass `String` as the second and `Array dt.asType` as the third argument.
 // TODO: when we introduce complex types like List, DataType will be represented as lean_ctor_object.
 #[no_mangle]
 unsafe extern "C" fn polars_lean_series_from_array(
     dt: DataType,
+    name: b_lean_obj_arg,
     array: b_lean_obj_arg,
 ) -> lean_obj_res {
     assert_eq!((*array).m_tag(), LeanArray);
+    assert_eq!((*name).m_tag(), LeanString);
+    let name = lean_string_to_str(name);
+
     let array: *const lean_array_object = array.cast();
     let objs = (*array).m_data.as_slice((*array).m_size);
 
     macro_rules! boxed_uint_to_series {
-        ($ty:ty, $data:expr) => {{
+        ($ty:ty, $data:expr, $name:expr) => {{
             let v = $data
                 .iter()
                 .map(|&o| {
@@ -50,12 +55,13 @@ unsafe extern "C" fn polars_lean_series_from_array(
                     v as $ty
                 })
                 .collect::<Vec<$ty>>();
-            Series::from_vec("series", v)
+            Series::from_vec($name, v)
         }};
     }
     macro_rules! int_to_series {
-        ($ty:ty, $data:expr) => {{
-            let v = $data.iter()
+        ($ty:ty, $data:expr, $name:expr) => {{
+            let v = $data
+                .iter()
                 .map(|&o| {
                     if lean_is_scalar(o) {
                         // TODO: handle overflow
@@ -65,32 +71,32 @@ unsafe extern "C" fn polars_lean_series_from_array(
                     }
                 })
                 .collect::<Vec<$ty>>();
-            Series::from_vec("series", v)
+            Series::from_vec($name, v)
         }};
     }
 
     let series = match dt {
-        DataType::UInt8 => boxed_uint_to_series!(u8, objs),
-        DataType::UInt16 => boxed_uint_to_series!(u16, objs),
-        DataType::UInt32 => boxed_uint_to_series!(u32, objs),
+        DataType::UInt8 => boxed_uint_to_series!(u8, objs, name),
+        DataType::UInt16 => boxed_uint_to_series!(u16, objs, name),
+        DataType::UInt32 => boxed_uint_to_series!(u32, objs, name),
         DataType::UInt64 => {
             let v = objs
                 .iter()
                 .map(|&o| lean_unbox_uint64(o))
                 .collect::<Vec<u64>>();
-            Series::from_vec("series", v)
-        },
-        DataType::Int8 => int_to_series!(i8, objs),
-        DataType::Int16 => int_to_series!(i16, objs),
-        DataType::Int32 => int_to_series!(i32, objs),
-        DataType::Int64 => int_to_series!(i64, objs),
+            Series::from_vec(name, v)
+        }
+        DataType::Int8 => int_to_series!(i8, objs, name),
+        DataType::Int16 => int_to_series!(i16, objs, name),
+        DataType::Int32 => int_to_series!(i32, objs, name),
+        DataType::Int64 => int_to_series!(i64, objs, name),
         DataType::Float64 => {
             let v = objs
                 .iter()
                 .map(|&o| lean_unbox_float(o))
                 .collect::<Vec<f64>>();
-            Series::from_vec("series", v)
-        },
+            Series::from_vec(name, v)
+        }
     };
     let series = Box::into_raw(Box::new(series));
     let cls = series_external_class();
