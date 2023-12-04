@@ -15,15 +15,23 @@ lean_exe «polars-lean» where
   -- Remove this line if you do not need such functionality.
   supportInterpreter := true
 
+-- Add all regular files under `base` to the input files
+def inputTree (base : FilePath) : SchedulerM (Array (BuildJob FilePath)) := do
+  let go (base : FilePath) : IO (Array FilePath) := do
+    let paths ← base.walkDir
+    paths.filterM (fun p => do
+      pure ((←p.metadata).type == IO.FS.FileType.file)
+    )
+  let paths ← (go base).catchExceptions (fun e => panic! s!"Failed to list {base}: {e}")
+  paths.mapM (fun p => inputFile p)
+
 extern_lib libpolars_lean pkg := do
   let name := nameToStaticLib "polars_lean"
   let rustDir := pkg.dir / "rust"
   let dependencies := #[
     (←inputFile <| rustDir / "Cargo.toml"),
-    (←inputFile <| rustDir / "Cargo.lock"),
-    -- TODO: automatically list all files under `src`
-    (←inputFile <| rustDir / "src" / "lib.rs")
-  ]
+    (←inputFile <| rustDir / "Cargo.lock")
+  ] ++ (←inputTree <| rustDir / "src")
   let rustLibFile := rustDir / "target" / "release" / name
 
   let libDir := pkg.buildDir / "lib"

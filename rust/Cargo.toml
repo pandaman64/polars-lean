@@ -10,7 +10,13 @@ name = "polars_lean"
 crate-type = ["staticlib"]
 
 [dependencies]
-polars = "0.35.4"
+polars = { version = "0.35.4", features = ["dtype-full"] }
 
 [build-dependencies]
 bindgen = "0.69.1"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
