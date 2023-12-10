@@ -1,10 +1,16 @@
-use polars::{frame::DataFrame, series::Series};
+use polars::{
+    error::PolarsResult,
+    frame::DataFrame,
+    io::{csv::CsvReader, SerReader},
+    series::Series,
+};
 
 use crate::{
     external_class::ExternalClass,
+    io::LeanIoResult,
     sys::{
         b_lean_obj_arg, convert_string, lean_array_object, lean_get_external_data, lean_obj_res,
-        LeanArray,
+        lean_string_to_str, LeanArray,
     },
 };
 
@@ -39,4 +45,18 @@ unsafe extern "C" fn polars_lean_print_data_frame(df: b_lean_obj_arg) -> lean_ob
     let df: *mut DataFrame = lean_get_external_data(df);
     let s = df.as_ref().unwrap().to_string();
     convert_string(s.as_str())
+}
+
+#[no_mangle]
+unsafe extern "C" fn polars_lean_data_frame_read_csv(s: b_lean_obj_arg) -> lean_obj_res {
+    // TODO: support options
+    fn read_csv(path: &str) -> PolarsResult<DataFrame> {
+        CsvReader::from_path(path)?.finish()
+    }
+    let path = lean_string_to_str(s);
+    match read_csv(path) {
+        Ok(df) => LeanIoResult::Ok(df),
+        Err(e) => LeanIoResult::Err(e),
+    }
+    .to_lean()
 }

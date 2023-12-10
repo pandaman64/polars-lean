@@ -271,6 +271,22 @@ pub(crate) unsafe fn lean_scalar_to_int64(o: b_lean_obj_arg) -> i64 {
     }
 }
 
+#[inline]
+pub(crate) unsafe fn lean_io_result_mk_ok(a: lean_obj_arg) -> lean_obj_res {
+    let r = lean_alloc_ctor(0, 2, 0);
+    lean_ctor_set(r, 0, a);
+    lean_ctor_set(r, 1, lean_box(0));
+    r
+}
+
+#[inline]
+pub(crate) unsafe fn lean_io_result_mk_error(e: lean_obj_arg) -> lean_obj_res {
+    let r = lean_alloc_ctor(0, 2, 0);
+    lean_ctor_set(r, 0, e);
+    lean_ctor_set(r, 1, lean_box(0));
+    r
+}
+
 // Utility function for strings
 pub(crate) unsafe fn convert_string(s: &str) -> lean_obj_res {
     lean_mk_string_from_bytes(s.as_ptr().cast(), s.len())
