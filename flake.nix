@@ -1,7 +1,10 @@
 {
   description = "Lean wrapper for polars";
 
-  outputs = { self, nixpkgs }:
+  inputs.lean.url = "github:leanprover/lean4?ref=v4.3.0";
+  inputs.lean.inputs.nixpkgs.follows = "nixpkgs";
+
+  outputs = { self, lean, nixpkgs }:
     let
       pkgs = nixpkgs.legacyPackages.x86_64-linux;
     in
@@ -13,7 +16,13 @@
         packages = [
           pkgs.nixpkgs-fmt
           pkgs.nil
+          pkgs.rustc
+          pkgs.cargo
+          pkgs.gdb
+          lean.defaultPackage.x86_64-linux
         ];
+
+        RUST_SRC_PATH = ''${pkgs.rustPlatform.rustLibSrc}'';
       };
     };
 }

@@ -5,3 +5,4 @@ import PolarsLean.DataType
 import PolarsLean.Error
 import PolarsLean.Series
 import PolarsLean.DataFrame
+import PolarsLean.LazyFrame

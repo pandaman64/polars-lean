@@ -6,8 +6,8 @@ use polars::{
 };
 
 use crate::{
-    external_class::ExternalClass,
-    io::LeanIoResult,
+    external_class::ToLean,
+    io::ToIoResult,
     sys::{
         b_lean_obj_arg, convert_string, lean_array_object, lean_get_external_data, lean_obj_res,
         lean_string_to_str, LeanArray,
@@ -54,9 +54,5 @@ unsafe extern "C" fn polars_lean_data_frame_read_csv(s: b_lean_obj_arg) -> lean_
         CsvReader::from_path(path)?.finish()
     }
     let path = lean_string_to_str(s);
-    match read_csv(path) {
-        Ok(df) => LeanIoResult::Ok(df),
-        Err(e) => LeanIoResult::Err(e),
-    }
-    .to_lean()
+    read_csv(path).to_io_result().to_lean()
 }

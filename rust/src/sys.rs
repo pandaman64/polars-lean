@@ -17,6 +17,36 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
 // static inline functions
 #[inline]
+pub(crate) unsafe fn lean_is_st(o: *mut lean_object) -> bool {
+    (*o).m_rc > 0
+}
+
+#[inline]
+pub(crate) unsafe fn lean_is_exclusive(o: *mut lean_object) -> bool {
+    if lean_is_st(o) {
+        (*o).m_rc == 1
+    } else {
+        false
+    }
+}
+
+#[inline]
+pub(crate) unsafe fn lean_dec_ref(o: *mut lean_object) {
+    if (*o).m_rc > 1 {
+        (*o).m_rc -= 1;
+    } else if (*o).m_rc != 0 {
+        lean_dec_ref_cold(o);
+    }
+}
+
+#[inline]
+pub(crate) unsafe fn lean_dec(o: *mut lean_object) {
+    if !lean_is_scalar(o) {
+        lean_dec_ref(o);
+    }
+}
+
+#[inline]
 pub(crate) fn lean_is_scalar(o: *mut lean_object) -> bool {
     (o as usize) & 1 == 1
 }
@@ -74,9 +104,21 @@ pub(crate) unsafe fn lean_alloc_external(
 }
 
 #[inline]
+pub(crate) unsafe fn lean_set_external_class(o: *mut lean_object, cls: *mut lean_external_class) {
+    debug_assert!((*o).m_tag() == LeanExternal);
+    (*o.cast::<lean_external_object>()).m_class = cls;
+}
+
+#[inline]
 pub(crate) unsafe fn lean_get_external_data<T>(o: *mut lean_object) -> *mut T {
     debug_assert!((*o).m_tag() == LeanExternal);
     (*o.cast::<lean_external_object>()).m_data.cast()
+}
+
+#[inline]
+pub(crate) unsafe fn lean_set_external_data<T>(o: *mut lean_object, data: *mut T) {
+    debug_assert!((*o).m_tag() == LeanExternal);
+    (*o.cast::<lean_external_object>()).m_data = data.cast();
 }
 
 #[inline]

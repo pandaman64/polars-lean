@@ -38,6 +38,10 @@ extern_lib libpolars_lean pkg := do
   let libFile := libDir / name
   buildFileAfterDepArray libFile dependencies (fun _ => do
     proc {
+      cmd := "which",
+      args := #[ "cargo" ]
+    }
+    proc {
       cmd := "cargo",
       args := #[ "build", "--release" ],
       cwd := rustDir

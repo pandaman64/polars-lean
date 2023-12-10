@@ -2,7 +2,7 @@ use polars::{prelude::NamedFromOwned, series::Series};
 
 use crate::{
     data_type::DataType,
-    external_class::BoxedExternalClass,
+    external_class::ToLean,
     sys::{
         b_lean_obj_arg, convert_string, lean_array_object, lean_get_external_data, lean_is_scalar,
         lean_obj_res, lean_scalar_to_int64, lean_string_to_str, lean_unbox, lean_unbox_float,
