@@ -2,4 +2,6 @@
 -- Import modules here that should be built as part of the library.
 import PolarsLean.Basic
 import PolarsLean.DataType
+import PolarsLean.Error
 import PolarsLean.Series
+import PolarsLean.DataFrame

@@ -1,34 +1,16 @@
-use std::{ffi::c_void, sync::OnceLock};
-
 use polars::{prelude::NamedFromOwned, series::Series};
 
 use crate::{
     data_type::DataType,
+    external_class::BoxedExternalClass,
     sys::{
-        b_lean_obj_arg, convert_string, lean_alloc_external, lean_array_object,
-        lean_external_class, lean_get_external_data, lean_is_scalar, lean_obj_res,
-        lean_register_external_class, lean_scalar_to_int64, lean_string_to_str, lean_unbox,
-        lean_unbox_float, lean_unbox_uint64, LeanArray, LeanString, SyncPtr,
+        b_lean_obj_arg, convert_string, lean_array_object, lean_get_external_data, lean_is_scalar,
+        lean_obj_res, lean_scalar_to_int64, lean_string_to_str, lean_unbox, lean_unbox_float,
+        lean_unbox_uint64, LeanArray, LeanString,
     },
 };
 
-static SERIES_EXTERNAL_CLASS: OnceLock<SyncPtr<lean_external_class>> = OnceLock::new();
-
-fn series_external_class() -> *mut lean_external_class {
-    extern "C" fn finalize(ptr: *mut c_void) {
-        drop(unsafe { Box::from_raw(ptr as *mut Series) });
-    }
-    extern "C" fn foreach(_: *mut c_void, _: b_lean_obj_arg) {
-        // do nothing as series do not contain any lean objects
-    }
-    SERIES_EXTERNAL_CLASS
-        .get_or_init(|| {
-            let external_class =
-                unsafe { lean_register_external_class(Some(finalize), Some(foreach)) };
-            SyncPtr(external_class)
-        })
-        .0
-}
+crate::external_class::declare_simple_external_class!(Series);
 
 /// # Safety
 /// The lean function must pass `String` as the second and `Array dt.asType` as the third argument.
@@ -98,9 +80,7 @@ unsafe extern "C" fn polars_lean_series_from_array(
             Series::from_vec(name, v)
         }
     };
-    let series = Box::into_raw(Box::new(series));
-    let cls = series_external_class();
-    lean_alloc_external(cls, series.cast())
+    series.to_lean()
 }
 
 /// # Safety
